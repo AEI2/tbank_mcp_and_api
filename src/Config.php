@@ -25,6 +25,12 @@ final class Config
         public readonly string $mcpAllowedOrigins = 'localhost,127.0.0.1,[::1]',
         public readonly bool $mcpRequireSession = false,
         public readonly int $mcpSessionTtl = 3600,
+        public readonly bool $rateLimitEnabled = false,
+        public readonly int $rateLimitRps = 50,
+        public readonly int $rateLimitRpm = 1000,
+        public readonly int $rateLimitMinIntervalMs = 0,
+        public readonly float $rateLimitMaxWait = 30.0,
+        public readonly int $rateLimitRetries = 3,
     ) {
     }
 
@@ -48,6 +54,12 @@ final class Config
             mcpAllowedOrigins: self::env(['TBANK_MCP_ALLOWED_ORIGINS'], 'localhost,127.0.0.1,[::1]'),
             mcpRequireSession: self::boolEnv(['TBANK_MCP_REQUIRE_SESSION'], false),
             mcpSessionTtl: (int) self::env(['TBANK_MCP_SESSION_TTL'], '3600'),
+            rateLimitEnabled: self::boolEnv(['TBANK_RATE_LIMIT'], true),
+            rateLimitRps: (int) self::env(['TBANK_RATE_RPS'], '50'),
+            rateLimitRpm: (int) self::env(['TBANK_RATE_RPM'], '1000'),
+            rateLimitMinIntervalMs: (int) self::env(['TBANK_RATE_MIN_INTERVAL_MS'], '0'),
+            rateLimitMaxWait: (float) self::env(['TBANK_RATE_MAX_WAIT'], '30'),
+            rateLimitRetries: (int) self::env(['TBANK_RATE_RETRIES'], '3'),
         );
     }
 

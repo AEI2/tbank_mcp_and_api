@@ -9,10 +9,20 @@ use Tbank\Invest\Exception\TradingDisabledException;
 
 final class Client
 {
+    private RateLimiter $limiter;
+
+    private Clock $clock;
+
     public function __construct(
         public readonly Config $config,
         private readonly Transport $transport = new CurlTransport(),
+        ?RateLimiter $rateLimiter = null,
+        ?Clock $clock = null,
     ) {
+        $this->clock = $clock ?? new SystemClock();
+        $this->limiter = $rateLimiter ?? ($config->rateLimitEnabled
+            ? SlidingWindowLimiter::file($config, $this->clock)
+            : new NullRateLimiter());
     }
 
     /**
@@ -43,10 +53,21 @@ final class Client
         }
 
         $url = $this->config->restBaseUrl() . $spec->path();
-        $response = $this->transport->post($url, $headers, $payload, $this->config->requestTimeout);
-        $trackingId = $response->header('x-tracking-id');
-
-        if ($response->status >= 400) {
+        $attempt = 0;
+        $maxRetries = max(0, $this->config->rateLimitRetries);
+        while (true) {
+            $this->limiter->acquire($spec->service, $spec->method);
+            $response = $this->transport->post($url, $headers, $payload, $this->config->requestTimeout);
+            $trackingId = $response->header('x-tracking-id');
+            if ($response->status < 400) {
+                break;
+            }
+            if ($attempt < $maxRetries && self::isRateLimitResponse($response)) {
+                $attempt++;
+                $reset = (float) ($response->header('x-ratelimit-reset') ?? $response->header('Retry-After') ?? 1);
+                $this->clock->sleep(max(0.25, $reset));
+                continue;
+            }
             throw $this->errorFromResponse($response, $trackingId);
         }
 
@@ -115,5 +136,23 @@ final class Client
         }
 
         return new TInvestException((string) $message, $response->status, $payload, $trackingId, is_scalar($code) ? $code : null);
+    }
+
+    private static function isRateLimitResponse(HttpResult $response): bool
+    {
+        if (in_array($response->status, [429, 503], true)) {
+            return true;
+        }
+        try {
+            $payload = json_decode($response->body, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return false;
+        }
+        if (!is_array($payload)) {
+            return false;
+        }
+        $code = $payload['code'] ?? $payload['description'] ?? null;
+
+        return $code === 8 || $code === '8';
     }
 }

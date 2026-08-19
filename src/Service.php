@@ -41,6 +41,12 @@ final class Service
                 'stdio' => true,
                 'streamable_http' => '/mcp',
             ],
+            'rate_limit' => [
+                'enabled' => $this->config->rateLimitEnabled,
+                'rps' => $this->config->rateLimitRps,
+                'rpm' => $this->config->rateLimitRpm,
+                'min_interval_ms' => $this->config->rateLimitMinIntervalMs,
+            ],
         ];
     }
 
