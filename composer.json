@@ -1,0 +1,37 @@
+{
+  "name": "aei2/tbank-mcp-and-api",
+  "description": "Universal REST API and MCP server for T-Bank Invest (T-Invest API) in PHP",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.3",
+    "ext-curl": "*",
+    "ext-json": "*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^11.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Tbank\\Invest\\": "src/"
+    },
+    "classmap": ["src/"]
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tbank\\Invest\\Tests\\": "tests/"
+    }
+  },
+  "bin": [
+    "bin/tbank-api",
+    "bin/tbank-mcp"
+  ],
+  "scripts": {
+    "api": "php bin/tbank-api",
+    "mcp": "php bin/tbank-mcp",
+    "test": "phpunit"
+  },
+  "config": {
+    "sort-packages": true
+  }
+}
