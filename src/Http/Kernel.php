@@ -6,7 +6,10 @@ namespace Tbank\Invest\Http;
 
 use Tbank\Invest\Config;
 use Tbank\Invest\Exception\TInvestException;
+use Tbank\Invest\Mcp\FileSessionStore;
 use Tbank\Invest\Mcp\Protocol;
+use Tbank\Invest\Mcp\SessionStore;
+use Tbank\Invest\Mcp\StreamableHttp;
 use Tbank\Invest\Mcp\Toolset;
 use Tbank\Invest\Service;
 
@@ -20,12 +23,17 @@ final class Kernel
     ) {
     }
 
-    public static function create(Service $service): self
+    public static function create(Service $service, ?SessionStore $sessions = null): self
     {
         $router = new Router();
         $toolset = new Toolset($service);
         $protocol = new Protocol($toolset, $service);
-        Routes::register($router, $service, $protocol, $toolset);
+        $sessions ??= new FileSessionStore(
+            sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'tbank-mcp-sessions',
+            $service->config->mcpSessionTtl,
+        );
+        $streamable = new StreamableHttp($protocol, $sessions, $service->config);
+        Routes::register($router, $service, $toolset, $streamable);
 
         return new self($service, $service->config, $router, $protocol);
     }

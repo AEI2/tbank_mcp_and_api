@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Tbank\Invest\Http;
 
 use Tbank\Invest\Exception\TInvestException;
-use Tbank\Invest\Mcp\Protocol;
+use Tbank\Invest\Mcp\StreamableHttp;
 use Tbank\Invest\Mcp\Toolset;
 use Tbank\Invest\Service;
 
 final class Routes
 {
-    public static function register(Router $router, Service $service, Protocol $protocol, Toolset $toolset): void
+    public static function register(Router $router, Service $service, Toolset $toolset, StreamableHttp $streamable): void
     {
         $router->get('/', fn () => $service->serverInfo() + [
             'docs' => [
@@ -19,7 +19,7 @@ final class Routes
                 'catalog' => '/v1/catalog',
                 'tools' => '/v1/tools',
                 'proxy' => 'POST /v1/tinvest/{service}/{method}',
-                'mcp' => 'POST /mcp',
+                'mcp' => 'GET|POST|DELETE /mcp (Streamable HTTP)',
             ],
         ]);
         $router->get('/health', fn () => [
@@ -54,18 +54,11 @@ final class Routes
                 $allowUnknown,
             );
         });
-        $router->post('/mcp', function (Request $req) use ($protocol) {
-            $message = $req->body;
-            if (!is_array($message)) {
-                throw new TInvestException('MCP request must be a JSON-RPC object', 400, null, null, 'invalid_mcp_request');
-            }
-            $result = $protocol->handle($message);
-            if ($result === null) {
-                return Response::json(new \stdClass(), 202);
-            }
-
-            return Response::json($result);
-        });
+        $mcp = static fn (Request $req) => $streamable->handle($req);
+        $router->get('/mcp', $mcp);
+        $router->post('/mcp', $mcp);
+        $router->delete('/mcp', $mcp);
+        $router->options('/mcp', $mcp);
 
         $router->get('/v1/accounts', fn (Request $req) => $service->getAccounts(
             $req->query('status') !== null ? (string) $req->query('status') : null,

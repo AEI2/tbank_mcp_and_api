@@ -10,7 +10,7 @@ use Tbank\Invest\Version;
 
 final class Protocol
 {
-    private const array SUPPORTED_VERSIONS = ['2024-11-05', '2025-03-26', '2025-06-18'];
+    private const array SUPPORTED_VERSIONS = ['2024-11-05', '2025-03-26', '2025-06-18', '2025-11-25'];
 
     public function __construct(
         private readonly Toolset $toolset,

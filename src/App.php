@@ -40,6 +40,7 @@ final class App
         $port = $config->apiPort;
         $public = dirname(__DIR__) . '/public';
         fwrite(STDERR, "T-Bank Invest API http://{$host}:{$port}  env={$config->environment}\n");
+        fwrite(STDERR, "Streamable HTTP MCP  http://{$host}:{$port}/mcp\n");
         passthru(escapeshellarg(PHP_BINARY) . ' -S ' . escapeshellarg($host . ':' . $port) . ' -t ' . escapeshellarg($public) . ' ' . escapeshellarg($router), $code);
         exit($code);
     }

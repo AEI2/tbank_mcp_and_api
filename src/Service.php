@@ -37,6 +37,10 @@ final class Service
             'app_name' => $this->config->appName,
             'token' => $this->config->maskedToken(),
             'methods' => count(Catalog::methods()),
+            'mcp' => [
+                'stdio' => true,
+                'streamable_http' => '/mcp',
+            ],
         ];
     }
 

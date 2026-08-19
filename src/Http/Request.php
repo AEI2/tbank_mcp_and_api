@@ -50,6 +50,32 @@ final class Request
         return null;
     }
 
+    public function acceptHeader(): string
+    {
+        return strtolower($this->header('Accept') ?? '');
+    }
+
+    public function wantsSse(): bool
+    {
+        return str_contains($this->acceptHeader(), 'text/event-stream');
+    }
+
+    public function wantsJson(): bool
+    {
+        $accept = $this->acceptHeader();
+
+        return $accept === ''
+            || str_contains($accept, 'application/json')
+            || str_contains($accept, '*/*');
+    }
+
+    public function mcpSessionId(): ?string
+    {
+        $value = $this->header('Mcp-Session-Id') ?? $this->header('MCP-Session-Id');
+
+        return $value !== null && $value !== '' ? $value : null;
+    }
+
     public static function fromGlobals(): self
     {
         $uri = $_SERVER['REQUEST_URI'] ?? '/';

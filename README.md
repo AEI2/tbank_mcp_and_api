@@ -8,7 +8,7 @@
 
 - Каталог **90+** методов T-Invest (`Users`, `Instruments`, `MarketData`, `Operations`, `Orders`, `StopOrders`, `Sandbox`, `Signal`)
 - Высокоуровневые REST-эндпоинты: поиск инструментов, свечи, стакан, портфель, заявки, песочница
-- MCP stdio (Cursor / Claude / другие клиенты) и HTTP JSON-RPC на `POST /mcp`
+- MCP stdio (Cursor / Claude) и **Streamable HTTP** на `/mcp` (POST + GET SSE + DELETE сессии)
 - Песочница и боевой контур, торговля выключена, пока не задан `TBANK_ALLOW_TRADING=true`
 - Нормализация `Quotation` / `MoneyValue` в поле `value`
 - Резолв инструмента по тикеру, FIGI, UID, ISIN или названию
@@ -49,7 +49,7 @@ composer api
 | GET | `/v1/catalog` | Каталог методов T-Invest |
 | GET | `/v1/tools` | Список MCP-инструментов |
 | POST | `/v1/tinvest/{service}/{method}` | Универсальный прокси |
-| POST | `/mcp` | MCP JSON-RPC |
+| GET/POST/DELETE | `/mcp` | MCP Streamable HTTP |
 | GET | `/v1/accounts` | Счета |
 | GET | `/v1/user` | Пользователь |
 | GET | `/v1/instruments/search?q=SBER` | Поиск |
@@ -75,6 +75,8 @@ curl -sS -X POST http://127.0.0.1:8080/v1/tinvest/UsersService/GetAccounts \
 
 ## MCP
 
+### stdio
+
 ```bash
 php bin/tbank-mcp
 ```
@@ -96,6 +98,35 @@ php bin/tbank-mcp
   }
 }
 ```
+
+### Streamable HTTP
+
+После `php bin/tbank-api` эндпоинт `http://127.0.0.1:8080/mcp` принимает транспорт [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http) (протокол 2025-03-26):
+
+- `POST /mcp` — JSON-RPC запросы; `Accept: text/event-stream` даёт SSE, иначе JSON
+- уведомления и ответы клиента — HTTP `202`
+- `GET /mcp` — SSE-поток для сообщений сервера
+- `DELETE /mcp` + `Mcp-Session-Id` — закрыть сессию
+- после `initialize` в ответе приходит `Mcp-Session-Id`
+
+```json
+{
+  "mcpServers": {
+    "tbank-invest": {
+      "url": "http://127.0.0.1:8080/mcp"
+    }
+  }
+}
+```
+
+```bash
+curl -sS -D - -X POST http://127.0.0.1:8080/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl"}}}'
+```
+
+Origin проверяется (защита от DNS rebinding). По умолчанию разрешены `localhost` / `127.0.0.1`; список задаётся через `TBANK_MCP_ALLOWED_ORIGINS`.
 
 Основные инструменты:
 

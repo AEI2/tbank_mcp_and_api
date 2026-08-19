@@ -22,6 +22,9 @@ final class Config
         public readonly ?string $defaultAccountId = null,
         public readonly float $requestTimeout = 30.0,
         public readonly ?string $restBaseUrlOverride = null,
+        public readonly string $mcpAllowedOrigins = 'localhost,127.0.0.1,[::1]',
+        public readonly bool $mcpRequireSession = false,
+        public readonly int $mcpSessionTtl = 3600,
     ) {
     }
 
@@ -42,6 +45,9 @@ final class Config
             defaultAccountId: $account !== '' ? $account : null,
             requestTimeout: (float) self::env(['TBANK_REQUEST_TIMEOUT'], '30'),
             restBaseUrlOverride: $override !== '' ? rtrim($override, '/') : null,
+            mcpAllowedOrigins: self::env(['TBANK_MCP_ALLOWED_ORIGINS'], 'localhost,127.0.0.1,[::1]'),
+            mcpRequireSession: self::boolEnv(['TBANK_MCP_REQUIRE_SESSION'], false),
+            mcpSessionTtl: (int) self::env(['TBANK_MCP_SESSION_TTL'], '3600'),
         );
     }
 
